@@ -1,0 +1,37 @@
+<sequence name="RoomReservationSequence" xmlns="http://ws.apache.org/ns/synapse">
+    <!-- Check room availability -->
+    <call>
+        <endpoint>
+            <http uri="http://localhost:5002/api/rooms/available?check_in={//check_in}&amp;check_out={//check_out}"/>
+        </endpoint>
+    </call>
+    
+    <property name="available_rooms" expression="json-eval($)"/>
+    
+    <!-- Select first available room -->
+    <script language="js">
+        var rooms = mc.getProperty('available_rooms');
+        if (rooms &amp;&amp; rooms.length > 0) {
+            mc.setProperty('selected_room', rooms[0].id);
+        }
+    </script>
+    
+    <!-- Block the room -->
+    <payloadFactory media-type="json">
+        <format>
+            {
+                "room_id": "$1",
+                "booking_id": "$2"
+            }
+        </format>
+        <args>
+            <arg expression="get-property('selected_room')"/>
+            <arg expression="//booking_id"/>
+        </args>
+    </payloadFactory>
+    <call>
+        <endpoint>
+            <http uri="http://localhost:5002/api/rooms/block" method="POST"/>
+        </endpoint>
+    </call>
+</sequence>

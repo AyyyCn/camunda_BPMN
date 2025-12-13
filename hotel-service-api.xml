@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api xmlns="http://ws.apache.org/ns/synapse" name="HotelServiceAPI" context="/hotel">
+    <resource methods="POST" uri-template="/reservation">
+        <inSequence>
+            <!-- Complete reservation flow -->
+            <log level="full"/>
+            
+            <!-- Sequence: Client → Room → Booking → Restaurant -->
+            <sequence key="ClientCreationSequence"/>
+            <sequence key="RoomReservationSequence"/>
+            <sequence key="BookingCreationSequence"/>
+            
+            <payloadFactory media-type="json">
+                <format>
+                    {
+                        "status": "reservation_created",
+                        "booking_id": "$1",
+                        "client_id": "$2",
+                        "room_id": "$3"
+                    }
+                </format>
+                <args>
+                    <arg expression="//booking_id"/>
+                    <arg expression="//client_id"/>
+                    <arg expression="//room_id"/>
+                </args>
+            </payloadFactory>
+            <respond/>
+        </inSequence>
+    </resource>
+    
+    <resource methods="GET" uri-template="/client/{client_id}/history">
+        <inSequence>
+            <!-- Get client booking history with restaurant orders -->
+            <call>
+                <endpoint>
+                    <http uri="http://localhost:5001/api/booking/client/{uri.var.client_id}"/>
+                </endpoint>
+            </call>
+            <property name="bookings" expression="json-eval($)"/>
+            
+            <!-- Get restaurant orders for each booking -->
+            <iterate expression="//bookings" id="bookingIterator">
+                <target>
+                    <sequence>
+                        <property name="booking_id" expression="//id"/>
+                        <call>
+                            <endpoint>
+                                <http uri="http://localhost:5003/api/restaurant/booking/{booking_id}/orders"/>
+                            </endpoint>
+                        </call>
+                        <property name="orders" expression="json-eval($)"/>
+                    </sequence>
+                </target>
+            </iterate>
+            <respond/>
+        </inSequence>
+    </resource>
+</api>

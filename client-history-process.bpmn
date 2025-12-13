@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_ClientHistory" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.0.0">
+  <bpmn:process id="ClientHistoryProcess" name="Client History Process" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_History" name="History Request">
+      <bpmn:outgoing>Flow_GetBookings</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_GetClientBookings" name="Get Client Bookings">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="get-client-bookings" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_GetBookings</bpmn:incoming>
+      <bpmn:outgoing>Flow_Iterate</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_GetRestaurantOrders" name="Get Restaurant Orders">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="get-restaurant-orders" />
+      </bpmn:extensionElements>
+      <bpmn:multiInstanceLoopCharacteristics zeebe:inputCollection="${bookings}" zeebe:elementVariable="booking">
+        <bpmn:completionCondition xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${nrOfCompletedInstances == nrOfInstances}</bpmn:completionCondition>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:incoming>Flow_Iterate</bpmn:incoming>
+      <bpmn:outgoing>Flow_Complete</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_HistoryComplete" name="History Complete">
+      <bpmn:incoming>Flow_Complete</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_GetBookings" sourceRef="StartEvent_History" targetRef="Task_GetClientBookings" />
+    <bpmn:sequenceFlow id="Flow_Iterate" sourceRef="Task_GetClientBookings" targetRef="Task_GetRestaurantOrders" />
+    <bpmn:sequenceFlow id="Flow_Complete" sourceRef="Task_GetRestaurantOrders" targetRef="EndEvent_HistoryComplete" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_ClientHistory">
+    <bpmndi:BPMNPlane id="BPMNPlane_ClientHistory" bpmnElement="ClientHistoryProcess">
+      <bpmndi:BPMNEdge id="Flow_GetBookings_di" bpmnElement="Flow_GetBookings">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Iterate_di" bpmnElement="Flow_Iterate">
+        <di:waypoint x="370" y="117" />
+        <di:waypoint x="430" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Complete_di" bpmnElement="Flow_Complete">
+        <di:waypoint x="530" y="117" />
+        <di:waypoint x="592" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_History" bpmnElement="StartEvent_History">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="160" y="142" width="74" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_GetClientBookings_di" bpmnElement="Task_GetClientBookings">
+        <dc:Bounds x="270" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_GetRestaurantOrders_di" bpmnElement="Task_GetRestaurantOrders">
+        <dc:Bounds x="430" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_HistoryComplete_di" bpmnElement="EndEvent_HistoryComplete">
+        <dc:Bounds x="592" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="580" y="142" width="60" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+
