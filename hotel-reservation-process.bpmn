@@ -69,10 +69,26 @@
         <zeebe:taskDefinition type="create-booking" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToPayment</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:serviceTask id="Task_Payment" name="Process Payment">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="process-payment" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToPayment</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToAccounting</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:serviceTask id="Task_Accounting" name="Generate Invoice">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="generate-accounting" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToAccounting</bpmn:incoming>
       <bpmn:outgoing>Flow_End</bpmn:outgoing>
     </bpmn:serviceTask>
 
-    <bpmn:endEvent id="EndEvent_Success" name="Completed">
+    <bpmn:endEvent id="EndEvent_Success" name="Reservation Complete">
       <bpmn:incoming>Flow_End</bpmn:incoming>
     </bpmn:endEvent>
 
@@ -105,7 +121,10 @@
     </bpmn:sequenceFlow>
 
     <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_BlockRoom" targetRef="Task_CreateBooking" />
-    <bpmn:sequenceFlow id="Flow_End" sourceRef="Task_CreateBooking" targetRef="EndEvent_Success" />
+    
+    <bpmn:sequenceFlow id="Flow_ToPayment" sourceRef="Task_CreateBooking" targetRef="Task_Payment" />
+    <bpmn:sequenceFlow id="Flow_ToAccounting" sourceRef="Task_Payment" targetRef="Task_Accounting" />
+    <bpmn:sequenceFlow id="Flow_End" sourceRef="Task_Accounting" targetRef="EndEvent_Success" />
 
   </bpmn:process>
 
@@ -122,7 +141,6 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_Client_di" bpmnElement="Gateway_Client" isMarkerVisible="true">
         <dc:Bounds x="545" y="95" width="50" height="50" />
-        <bpmndi:BPMNLabel><dc:Bounds x="536" y="71" width="69" height="14" /></bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_CreateClient_di" bpmnElement="Task_CreateClient">
         <dc:Bounds x="650" y="200" width="100" height="80" />
@@ -135,7 +153,6 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_Room_di" bpmnElement="Gateway_Room" isMarkerVisible="true">
         <dc:Bounds x="1045" y="95" width="50" height="50" />
-        <bpmndi:BPMNLabel><dc:Bounds x="1028" y="71" width="84" height="14" /></bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_BlockRoom_di" bpmnElement="Task_BlockRoom">
         <dc:Bounds x="1150" y="80" width="100" height="80" />
@@ -143,12 +160,21 @@
       <bpmndi:BPMNShape id="Task_CreateBooking_di" bpmnElement="Task_CreateBooking">
         <dc:Bounds x="1300" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
+      
+      <bpmndi:BPMNShape id="Task_Payment_di" bpmnElement="Task_Payment">
+        <dc:Bounds x="1450" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Accounting_di" bpmnElement="Task_Accounting">
+        <dc:Bounds x="1600" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
       <bpmndi:BPMNShape id="EndEvent_Success_di" bpmnElement="EndEvent_Success">
-        <dc:Bounds x="1462" y="102" width="36" height="36" />
+        <dc:Bounds x="1750" y="102" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_Rejected_di" bpmnElement="EndEvent_Rejected">
         <dc:Bounds x="1162" y="222" width="36" height="36" />
       </bpmndi:BPMNShape>
+      
       <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1"><di:waypoint x="188" y="120" /><di:waypoint x="240" y="120" /></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2"><di:waypoint x="340" y="120" /><di:waypoint x="390" y="120" /></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3"><di:waypoint x="490" y="120" /><di:waypoint x="545" y="120" /></bpmndi:BPMNEdge>
@@ -160,7 +186,10 @@
       <bpmndi:BPMNEdge id="Flow_RoomYes_di" bpmnElement="Flow_RoomYes"><di:waypoint x="1095" y="120" /><di:waypoint x="1150" y="120" /></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_RoomNo_di" bpmnElement="Flow_RoomNo"><di:waypoint x="1070" y="145" /><di:waypoint x="1070" y="240" /><di:waypoint x="1162" y="240" /></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6"><di:waypoint x="1250" y="120" /><di:waypoint x="1300" y="120" /></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_End_di" bpmnElement="Flow_End"><di:waypoint x="1400" y="120" /><di:waypoint x="1462" y="120" /></bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_ToPayment_di" bpmnElement="Flow_ToPayment"><di:waypoint x="1400" y="120" /><di:waypoint x="1450" y="120" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToAccounting_di" bpmnElement="Flow_ToAccounting"><di:waypoint x="1550" y="120" /><di:waypoint x="1600" y="120" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_End_di" bpmnElement="Flow_End"><di:waypoint x="1700" y="120" /><di:waypoint x="1750" y="120" /></bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>
