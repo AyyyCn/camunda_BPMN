@@ -1,171 +1,166 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.42.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.0.0">
   <bpmn:process id="HotelReservationProcess" name="Hotel Reservation Process" isExecutable="true">
-    <bpmn:startEvent id="StartEvent_Reservation" name="Reservation Request">
-      <bpmn:outgoing>Flow_Validate</bpmn:outgoing>
+    
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:serviceTask id="Task_ValidateInput" name="Validate Input">
+    
+    <bpmn:serviceTask id="Task_Validate" name="Validate Input">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="validate-input" />
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_Validate</bpmn:incoming>
-      <bpmn:outgoing>Flow_CheckClient</bpmn:outgoing>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:callActivity id="SubProcess_CreateClient" name="Create or Find Client" calledElement="ClientCreationProcess">
-      <bpmn:incoming>Flow_CheckClient</bpmn:incoming>
-      <bpmn:outgoing>Flow_CheckRooms</bpmn:outgoing>
-    </bpmn:callActivity>
-    <bpmn:serviceTask id="Task_CheckRoomAvailability" name="Check Room Availability">
+    
+    <bpmn:serviceTask id="Task_SearchClient" name="Search Client">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="search-client" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:exclusiveGateway id="Gateway_Client" name="Client Found?">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_ClientYes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ClientNo</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:serviceTask id="Task_CreateClient" name="Create Client">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="create-client" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ClientNo</bpmn:incoming>
+      <bpmn:outgoing>Flow_ClientCreated</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:exclusiveGateway id="Gateway_MergeClient">
+      <bpmn:incoming>Flow_ClientYes</bpmn:incoming>
+      <bpmn:incoming>Flow_ClientCreated</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:serviceTask id="Task_CheckRoom" name="Check Availability">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="check-room-availability" />
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_CheckRooms</bpmn:incoming>
-      <bpmn:outgoing>Flow_RoomDecision</bpmn:outgoing>
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:exclusiveGateway id="Gateway_RoomAvailable" name="Room Available?">
-      <bpmn:incoming>Flow_RoomDecision</bpmn:incoming>
-      <bpmn:outgoing>Flow_BlockRoom</bpmn:outgoing>
-      <bpmn:outgoing>Flow_NoRoom</bpmn:outgoing>
+
+    <bpmn:exclusiveGateway id="Gateway_Room" name="Room Available?">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_RoomYes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_RoomNo</bpmn:outgoing>
     </bpmn:exclusiveGateway>
+
     <bpmn:serviceTask id="Task_BlockRoom" name="Block Room">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="block-room" />
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_BlockRoom</bpmn:incoming>
-      <bpmn:outgoing>Flow_CreateBooking</bpmn:outgoing>
+      <bpmn:incoming>Flow_RoomYes</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
     </bpmn:serviceTask>
+
     <bpmn:serviceTask id="Task_CreateBooking" name="Create Booking">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="create-booking" />
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_CreateBooking</bpmn:incoming>
-      <bpmn:outgoing>Flow_Success</bpmn:outgoing>
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_End</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:endEvent id="EndEvent_Success" name="Reservation Created">
-      <bpmn:incoming>Flow_Success</bpmn:incoming>
+
+    <bpmn:endEvent id="EndEvent_Success" name="Completed">
+      <bpmn:incoming>Flow_End</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:endEvent id="EndEvent_NoRoom" name="No Room Available">
-      <bpmn:incoming>Flow_NoRoom</bpmn:incoming>
+
+    <bpmn:endEvent id="EndEvent_Rejected" name="Rejected">
+      <bpmn:incoming>Flow_RoomNo</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:boundaryEvent id="BoundaryEvent_Error" name="Error" attachedToRef="Task_ValidateInput">
-      <bpmn:outgoing>Flow_Error</bpmn:outgoing>
-      <bpmn:errorEventDefinition id="ErrorEventDefinition_1" />
-    </bpmn:boundaryEvent>
-    <bpmn:endEvent id="EndEvent_Error" name="Error">
-      <bpmn:incoming>Flow_Error</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_Validate" sourceRef="StartEvent_Reservation" targetRef="Task_ValidateInput" />
-    <bpmn:sequenceFlow id="Flow_CheckClient" sourceRef="Task_ValidateInput" targetRef="SubProcess_CreateClient" />
-    <bpmn:sequenceFlow id="Flow_CheckRooms" sourceRef="SubProcess_CreateClient" targetRef="Task_CheckRoomAvailability" />
-    <bpmn:sequenceFlow id="Flow_RoomDecision" sourceRef="Task_CheckRoomAvailability" targetRef="Gateway_RoomAvailable" />
-    <bpmn:sequenceFlow id="Flow_BlockRoom" name="Yes" sourceRef="Gateway_RoomAvailable" targetRef="Task_BlockRoom">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=${roomAvailable == true}</bpmn:conditionExpression>
+
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_Validate" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_Validate" targetRef="Task_SearchClient" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_SearchClient" targetRef="Gateway_Client" />
+    
+    <bpmn:sequenceFlow id="Flow_ClientYes" name="Yes" sourceRef="Gateway_Client" targetRef="Gateway_MergeClient">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=clientFound = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_NoRoom" name="No" sourceRef="Gateway_RoomAvailable" targetRef="EndEvent_NoRoom">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=${roomAvailable == false}</bpmn:conditionExpression>
+    
+    <bpmn:sequenceFlow id="Flow_ClientNo" name="No" sourceRef="Gateway_Client" targetRef="Task_CreateClient">
+       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=clientFound = false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_CreateBooking" sourceRef="Task_BlockRoom" targetRef="Task_CreateBooking" />
-    <bpmn:sequenceFlow id="Flow_Success" sourceRef="Task_CreateBooking" targetRef="EndEvent_Success" />
-    <bpmn:sequenceFlow id="Flow_Error" sourceRef="BoundaryEvent_Error" targetRef="EndEvent_Error" />
+
+    <bpmn:sequenceFlow id="Flow_ClientCreated" sourceRef="Task_CreateClient" targetRef="Gateway_MergeClient" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Gateway_MergeClient" targetRef="Task_CheckRoom" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Task_CheckRoom" targetRef="Gateway_Room" />
+
+    <bpmn:sequenceFlow id="Flow_RoomYes" name="Yes" sourceRef="Gateway_Room" targetRef="Task_BlockRoom">
+       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=roomAvailable = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    
+    <bpmn:sequenceFlow id="Flow_RoomNo" name="No" sourceRef="Gateway_Room" targetRef="EndEvent_Rejected">
+       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=roomAvailable = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_BlockRoom" targetRef="Task_CreateBooking" />
+    <bpmn:sequenceFlow id="Flow_End" sourceRef="Task_CreateBooking" targetRef="EndEvent_Success" />
+
   </bpmn:process>
+
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="HotelReservationProcess">
-      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_Reservation">
-        <dc:Bounds x="179" y="149" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="168" y="192" width="59" height="27" />
-        </bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_ValidateInput_di" bpmnElement="Task_ValidateInput">
-        <dc:Bounds x="270" y="127" width="100" height="80" />
+      <bpmndi:BPMNShape id="Task_Validate_di" bpmnElement="Task_Validate">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="SubProcess_CreateClient_di" bpmnElement="SubProcess_CreateClient">
-        <dc:Bounds x="430" y="127" width="100" height="80" />
+      <bpmndi:BPMNShape id="Task_SearchClient_di" bpmnElement="Task_SearchClient">
+        <dc:Bounds x="390" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_CheckRoomAvailability_di" bpmnElement="Task_CheckRoomAvailability">
-        <dc:Bounds x="590" y="127" width="100" height="80" />
+      <bpmndi:BPMNShape id="Gateway_Client_di" bpmnElement="Gateway_Client" isMarkerVisible="true">
+        <dc:Bounds x="545" y="95" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="536" y="71" width="69" height="14" /></bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_RoomAvailable_di" bpmnElement="Gateway_RoomAvailable" isMarkerVisible="true">
-        <dc:Bounds x="752" y="142" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="736" y="110" width="83" height="14" />
-        </bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="Task_CreateClient_di" bpmnElement="Task_CreateClient">
+        <dc:Bounds x="650" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_MergeClient_di" bpmnElement="Gateway_MergeClient" isMarkerVisible="true">
+        <dc:Bounds x="795" y="95" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CheckRoom_di" bpmnElement="Task_CheckRoom">
+        <dc:Bounds x="890" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Room_di" bpmnElement="Gateway_Room" isMarkerVisible="true">
+        <dc:Bounds x="1045" y="95" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1028" y="71" width="84" height="14" /></bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_BlockRoom_di" bpmnElement="Task_BlockRoom">
-        <dc:Bounds x="850" y="210" width="100" height="80" />
+        <dc:Bounds x="1150" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_CreateBooking_di" bpmnElement="Task_CreateBooking">
-        <dc:Bounds x="1010" y="210" width="100" height="80" />
+        <dc:Bounds x="1300" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_Success_di" bpmnElement="EndEvent_Success">
-        <dc:Bounds x="1172" y="232" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1161" y="275" width="59" height="27" />
-        </bpmndi:BPMNLabel>
+        <dc:Bounds x="1462" y="102" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="EndEvent_NoRoom_di" bpmnElement="EndEvent_NoRoom">
-        <dc:Bounds x="1172" y="82" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1166" y="125" width="47" height="27" />
-        </bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="EndEvent_Rejected_di" bpmnElement="EndEvent_Rejected">
+        <dc:Bounds x="1162" y="222" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="EndEvent_Error_di" bpmnElement="EndEvent_Error">
-        <dc:Bounds x="382" y="82" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="387" y="125" width="26" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BoundaryEvent_Error_di" bpmnElement="BoundaryEvent_Error">
-        <dc:Bounds x="292" y="129" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="297" y="172" width="26" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Flow_Validate_di" bpmnElement="Flow_Validate">
-        <di:waypoint x="215" y="167" />
-        <di:waypoint x="270" y="167" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_CheckClient_di" bpmnElement="Flow_CheckClient">
-        <di:waypoint x="370" y="167" />
-        <di:waypoint x="430" y="167" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_CheckRooms_di" bpmnElement="Flow_CheckRooms">
-        <di:waypoint x="530" y="167" />
-        <di:waypoint x="590" y="167" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_RoomDecision_di" bpmnElement="Flow_RoomDecision">
-        <di:waypoint x="690" y="167" />
-        <di:waypoint x="752" y="167" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_BlockRoom_di" bpmnElement="Flow_BlockRoom">
-        <di:waypoint x="772" y="187" />
-        <di:waypoint x="772" y="250" />
-        <di:waypoint x="850" y="250" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="778" y="209" width="18" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_NoRoom_di" bpmnElement="Flow_NoRoom">
-        <di:waypoint x="752" y="167" />
-        <di:waypoint x="752" y="110" />
-        <di:waypoint x="1170" y="110" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="760" y="128" width="15" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_CreateBooking_di" bpmnElement="Flow_CreateBooking">
-        <di:waypoint x="950" y="250" />
-        <di:waypoint x="1010" y="250" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Success_di" bpmnElement="Flow_Success">
-        <di:waypoint x="1110" y="250" />
-        <di:waypoint x="1172" y="250" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Error_di" bpmnElement="Flow_Error">
-        <di:waypoint x="290" y="147" />
-        <di:waypoint x="290" y="100" />
-        <di:waypoint x="400" y="100" />
-      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1"><di:waypoint x="188" y="120" /><di:waypoint x="240" y="120" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2"><di:waypoint x="340" y="120" /><di:waypoint x="390" y="120" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3"><di:waypoint x="490" y="120" /><di:waypoint x="545" y="120" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ClientYes_di" bpmnElement="Flow_ClientYes"><di:waypoint x="595" y="120" /><di:waypoint x="795" y="120" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ClientNo_di" bpmnElement="Flow_ClientNo"><di:waypoint x="570" y="145" /><di:waypoint x="570" y="240" /><di:waypoint x="650" y="240" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ClientCreated_di" bpmnElement="Flow_ClientCreated"><di:waypoint x="750" y="240" /><di:waypoint x="820" y="240" /><di:waypoint x="820" y="145" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4"><di:waypoint x="845" y="120" /><di:waypoint x="890" y="120" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5"><di:waypoint x="990" y="120" /><di:waypoint x="1045" y="120" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RoomYes_di" bpmnElement="Flow_RoomYes"><di:waypoint x="1095" y="120" /><di:waypoint x="1150" y="120" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RoomNo_di" bpmnElement="Flow_RoomNo"><di:waypoint x="1070" y="145" /><di:waypoint x="1070" y="240" /><di:waypoint x="1162" y="240" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6"><di:waypoint x="1250" y="120" /><di:waypoint x="1300" y="120" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_End_di" bpmnElement="Flow_End"><di:waypoint x="1400" y="120" /><di:waypoint x="1462" y="120" /></bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>
