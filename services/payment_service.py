@@ -17,6 +17,8 @@ class PaymentService:
         
         # Simulate payment processing logic
         transaction_id = str(uuid.uuid4())
+
+        print(amount)
         
         # Simple validation mock
         if amount <= 0:
@@ -47,4 +49,4 @@ class PaymentService:
         return jsonify(history)
 
 if __name__ == '__main__':
-    app.run(port=5005, debug=True)
+    app.run(port=5007, debug=True)

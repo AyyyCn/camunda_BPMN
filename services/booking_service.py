@@ -3,6 +3,8 @@ import uuid
 from datetime import datetime, timedelta
 import json
 
+import requests
+
 app = Flask(__name__)
 
 # Mock database
@@ -11,24 +13,26 @@ clients = {}
 
 class BookingService:
     @app.route('/api/booking/create', methods=['POST'])
-    def create_booking():
+    def create_booking_endpoint():
         data = request.json
         booking_id = str(uuid.uuid4())
-        
+    
         booking = {
-            'id': booking_id,
-            'client_id': data.get('client_id'),
-            'room_id': data.get('room_id'),
-            'check_in': data.get('check_in'),
-            'check_out': data.get('check_out'),
-            'guests': data.get('guests', 1),
-            'status': 'confirmed',
-            'total_amount': data.get('total_amount', 0),
-            'created_at': datetime.now().isoformat()
+            "id": booking_id,
+            "client_id": data.get("client_id"),
+            "room_id": data.get("room_id"),
+            "check_in": data.get("check_in"),
+            "check_out": data.get("check_out"),
+            "guests": data.get("guests", 1),
+            "status": "confirmed",
+            "total_amount": data.get("total_amount", 0),
+            "created_at": datetime.now().isoformat()
         }
-        
+    
         bookings[booking_id] = booking
-        return jsonify({'booking_id': booking_id, 'status': 'success'})
+        return jsonify({"booking_id": booking_id, "status": "success"})
+
+
 
     @app.route('/api/booking/<booking_id>', methods=['GET'])
     def get_booking(booking_id):

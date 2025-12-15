@@ -23,12 +23,12 @@ class RoomService:
         
         # Simple availability check
         available_rooms = [room for room in rooms.values() if room['status'] == 'available']
+        print(available_rooms)
         return jsonify(available_rooms)
 
     @app.route('/api/rooms/<room_id>/block', methods=['POST'])
-    def block_room():
+    def block_room(room_id):
         data = request.json
-        room_id = data.get('room_id')
         booking_id = data.get('booking_id')
         
         if room_id in rooms and rooms[room_id]['status'] == 'available':
@@ -63,4 +63,4 @@ class RoomService:
         return jsonify(list(rooms.values()))
 
 if __name__ == '__main__':
-    app.run(port=5002, debug=True)
+    app.run(port=5009, debug=True)
