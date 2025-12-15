@@ -1,10 +1,12 @@
 from flask import Flask, request, jsonify
 import uuid
+from datetime import datetime
 
 app = Flask(__name__)
 
 # Mock database
 clients = {}
+complaints_db = {}
 
 class ClientService:
     @app.route('/api/clients/create', methods=['POST'])
@@ -50,6 +52,29 @@ class ClientService:
             found_clients = [client for client in clients.values() if client.get('email') == email]
             return jsonify(found_clients)
         return jsonify([])
+
+    @app.route('/api/complaints/log', methods=['POST'])
+    def log_complaint():
+        data = request.json
+        complaint_id = str(uuid.uuid4())
+        complaint = {
+            'id': complaint_id,
+            'client_id': data.get('client_id'),
+            'room_id': data.get('room_id'),
+            'description': data.get('description'),
+            'status': 'open',
+            'created_at': datetime.now().isoformat()
+        }
+        # Store complaint in in‑memory dict (demo only)
+        complaints_db[complaint_id] = complaint
+
+        return jsonify({'complaint_id': complaint_id, 'status': 'logged'})
+
+    @app.route('/api/complaints/<complaint_id>/close', methods=['PUT'])
+    def close_complaint(complaint_id):
+        # Mock closing
+        return jsonify({'status': 'closed', 'closed_at': datetime.now().isoformat()})
+
 
 if __name__ == '__main__':
     app.run(port=5002, debug=True)

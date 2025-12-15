@@ -1,5 +1,10 @@
 requests>=2.31.0
 pyzeebe>=2.0.0
 zeebe-grpc>=8.0.0
+grpcio>=1.76.0
+
+
+
+
 
 

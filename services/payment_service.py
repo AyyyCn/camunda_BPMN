@@ -8,7 +8,7 @@ app = Flask(__name__)
 transactions = {}
 
 class PaymentService:
-    @app.route('/api/payment/process', methods=['POST'])
+    @app.route('/api/payments/process', methods=['POST'])
     def process_payment():
         data = request.json
         booking_id = data.get('booking_id')
@@ -38,6 +38,7 @@ class PaymentService:
         print(f"Payment processed for Booking {booking_id}: ${amount}")
         
         return jsonify({
+            'payment_id': transaction_id,
             'transaction_id': transaction_id,
             'status': 'success',
             'message': 'Payment processed successfully'

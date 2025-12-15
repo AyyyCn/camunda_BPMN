@@ -14,12 +14,11 @@
     <bpmn:serviceTask id="Task_GetRestaurantOrders" name="Get Restaurant Orders">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="get-restaurant-orders" />
+        <zeebe:loopCharacteristics inputCollection="=bookings" inputElement="booking" />
       </bpmn:extensionElements>
-      <bpmn:multiInstanceLoopCharacteristics zeebe:inputCollection="${bookings}" zeebe:elementVariable="booking">
-        <bpmn:completionCondition xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${nrOfCompletedInstances == nrOfInstances}</bpmn:completionCondition>
-      </bpmn:multiInstanceLoopCharacteristics>
       <bpmn:incoming>Flow_Iterate</bpmn:incoming>
       <bpmn:outgoing>Flow_Complete</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics />
     </bpmn:serviceTask>
     <bpmn:endEvent id="EndEvent_HistoryComplete" name="History Complete">
       <bpmn:incoming>Flow_Complete</bpmn:incoming>

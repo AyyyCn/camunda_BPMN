@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+  ESB + Camunda Integration Layer
+  ================================
+  ESB Role: Middleware, routing, data sync, financial transactions
+  Camunda Role: Business process orchestration
+  
+  Architecture:
+  Client → ESB → Camunda Process → Local Services
+                      ↓
+               ESB → Central DB Sync
+                      ↓
+               ESB → HQ Financial Push
+-->
+<api xmlns="http://ws.apache.org/ns/synapse" name="HotelBeyESB" context="/api/v1">
+    
+    <!-- 
+      Reservation Endpoint
+      Delegates to Camunda for process orchestration
+    -->
+    <resource methods="POST" uri-template="/reservation">
+        <inSequence>
+            <log level="custom">
+                <property name="MESSAGE" value="=== ESB: Received reservation request ==="/>
+            </log>
+            
+            <!-- Validate and transform input -->
+            <payloadFactory media-type="json">
+                <format>
+                    {
+                        "variables": {
+                            "first_name": {"value": "$1", "type": "String"},
+                            "last_name": {"value": "$2", "type": "String"},
+                            "email": {"value": "$3", "type": "String"},
+                            "phone": {"value": "$4", "type": "String"},
+                            "check_in": {"value": "$5", "type": "String"},
+                            "check_out": {"value": "$6", "type": "String"},
+                            "guests": {"value": $7, "type": "Integer"},
+                            "room_type": {"value": "$8", "type": "String"},
+                            "branch_code": {"value": "SOUSSE", "type": "String"}
+                        }
+                    }
+                </format>
+                <args>
+                    <arg expression="$.first_name"/>
+                    <arg expression="$.last_name"/>
+                    <arg expression="$.email"/>
+                    <arg expression="$.phone"/>
+                    <arg expression="$.check_in"/>
+                    <arg expression="$.check_out"/>
+                    <arg expression="$.guests"/>
+                    <arg expression="$.room_type"/>
+                </args>
+            </payloadFactory>
+            
+            <!-- Start Camunda Process -->
+            <call>
+                <endpoint>
+                    <http uri-template="http://localhost:8080/v2/process-instances" method="POST">
+                        <headers>
+                            <header name="Content-Type" value="application/json"/>
+                        </headers>
+                    </http>
+                </endpoint>
+            </call>
+            
+            <property name="process_instance_key" expression="json-eval($.processInstanceKey)"/>
+            <property name="booking_result" expression="json-eval($)"/>
+            
+            <log level="custom">
+                <property name="MESSAGE" value="=== ESB: Camunda process started ==="/>
+                <property name="PROCESS_KEY" expression="get-property('process_instance_key')"/>
+            </log>
+            
+            <!-- Sync to Central DB (HQ) -->
+            <clone>
+                <target>
+                    <sequence>
+                        <log level="custom">
+                            <property name="MESSAGE" value="=== ESB: Syncing to Central DB ==="/>
+                        </log>
+                        <payloadFactory media-type="json">
+                            <format>
+                                {
+                                    "action": "RESERVATION_CREATED",
+                                    "branch": "SOUSSE",
+                                    "process_key": "$1",
+                                    "timestamp": "$2"
+                                }
+                            </format>
+                            <args>
+                                <arg expression="get-property('process_instance_key')"/>
+                                <arg expression="get-property('SYSTEM_DATE')"/>
+                            </args>
+                        </payloadFactory>
+                        <call>
+                            <endpoint>
+                                <http uri-template="http://hq.hotelbey.local:8080/api/central-db/sync" method="POST"/>
+                            </endpoint>
+                        </call>
+                    </sequence>
+                </target>
+            </clone>
+            
+            <!-- Return response to client -->
+            <payloadFactory media-type="json">
+                <format>
+                    {
+                        "status": "processing",
+                        "process_instance_key": "$1",
+                        "message": "Reservation is being processed"
+                    }
+                </format>
+                <args>
+                    <arg expression="get-property('process_instance_key')"/>
+                </args>
+            </payloadFactory>
+            <respond/>
+        </inSequence>
+    </resource>
+    
+    <!--
+      Financial Transaction Push
+      ESB pushes completed transactions to HQ SAP
+    -->
+    <resource methods="POST" uri-template="/finance/transaction">
+        <inSequence>
+            <log level="custom">
+                <property name="MESSAGE" value="=== ESB: Pushing financial transaction to HQ ==="/>
+            </log>
+            
+            <!-- Transform to SAP format -->
+            <payloadFactory media-type="json">
+                <format>
+                    {
+                        "SAP_DOC_TYPE": "HOTEL_REVENUE",
+                        "BRANCH_CODE": "SOUSSE",
+                        "AMOUNT": $1,
+                        "CURRENCY": "TND",
+                        "BOOKING_REF": "$2",
+                        "POSTING_DATE": "$3"
+                    }
+                </format>
+                <args>
+                    <arg expression="$.amount"/>
+                    <arg expression="$.booking_id"/>
+                    <arg expression="$.date"/>
+                </args>
+            </payloadFactory>
+            
+            <!-- Push to SAP Business One -->
+            <call>
+                <endpoint>
+                    <http uri-template="http://hq.hotelbey.local:8080/sap/b1/transactions" method="POST"/>
+                </endpoint>
+            </call>
+            
+            <respond/>
+        </inSequence>
+    </resource>
+    
+    <!--
+      Data Sync Endpoint
+      Syncs local data to Central Data Warehouse
+    -->
+    <resource methods="POST" uri-template="/sync/guest-profile">
+        <inSequence>
+            <log level="custom">
+                <property name="MESSAGE" value="=== ESB: Syncing guest profile to Central DB ==="/>
+            </log>
+            
+            <!-- Enrich with loyalty points from central -->
+            <call>
+                <endpoint>
+                    <http uri-template="http://hq.hotelbey.local:8080/api/central-db/loyalty/{uri.var.client_id}"/>
+                </endpoint>
+            </call>
+            <property name="loyalty_points" expression="json-eval($.points)"/>
+            
+            <!-- Update central with local data -->
+            <call>
+                <endpoint>
+                    <http uri-template="http://hq.hotelbey.local:8080/api/central-db/guests" method="PUT"/>
+                </endpoint>
+            </call>
+            
+            <respond/>
+        </inSequence>
+    </resource>
+    
+</api>
+

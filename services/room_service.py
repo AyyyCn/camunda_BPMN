@@ -61,6 +61,29 @@ class RoomService:
     @app.route('/api/rooms', methods=['GET'])
     def get_all_rooms():
         return jsonify(list(rooms.values()))
+    
+    @app.route('/api/rooms/<room_id>/status', methods=['PUT'])
+    def update_room_status(room_id):
+        data = request.json
+        new_status = data.get('status')
+
+        if room_id in rooms:
+            rooms[room_id]['status'] = new_status
+            return jsonify({'id': room_id, 'status': new_status})
+        return jsonify({'error': 'Room not found'}), 404
+
+    @app.route('/api/rooms/assign', methods=['POST'])
+    def assign_room():
+        data = request.json
+        room_id = data.get('room_id')
+        client_id = data.get('client_id')
+
+        if room_id in rooms and rooms[room_id]['status'] == 'available':
+            rooms[room_id]['status'] = 'occupied'
+            rooms[room_id]['current_guest'] = client_id
+            return jsonify({'status': 'assigned', 'room_id': room_id})
+        return jsonify({'error': 'Room not available'}), 400
+
 
 if __name__ == '__main__':
     app.run(port=5009, debug=True)

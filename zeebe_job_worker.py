@@ -192,7 +192,43 @@ class HotelServiceWorker:
             data = response.json()
             
             print(f" >>> INVOICE GENERATED: {data.get('invoice_id')} <<<")
+            
+            # Trigger ESB sync to HQ (Central DB + SAP)
+            try:
+                esb_url = f"{self.services_base_url}:8280/api/v1/finance/transaction"
+                sync_payload = {
+                    "booking_id": booking_id,
+                    "amount": 150.0,
+                    "date": "2024-01-15",
+                    "invoice_id": data.get("invoice_id")
+                }
+                requests.post(esb_url, json=sync_payload, timeout=5)
+                print(f" >>> ESB SYNC: Pushed to HQ <<<")
+            except Exception as e:
+                print(f" >>> ESB SYNC: Failed (non-blocking) - {e} <<<")
+            
             return {"invoice_id": data.get("invoice_id")}
+
+        # --- NEW: ESB Data Sync Handler (for manual sync triggers) ---
+        @self.worker.task(task_type="sync-to-hq")
+        async def sync_to_hq(job: Job, booking_id: str, client_id: str) -> Dict[str, Any]:
+            """Sync data to HQ via ESB"""
+            print(f"[Zeebe] Syncing to HQ via ESB...")
+            
+            esb_url = f"{self.services_base_url}:8280/api/v1/sync/guest-profile"
+            
+            try:
+                response = requests.post(esb_url, json={
+                    "client_id": client_id,
+                    "booking_id": booking_id,
+                    "branch": "SOUSSE"
+                }, timeout=10)
+                response.raise_for_status()
+                print(f" >>> HQ SYNC COMPLETE <<<")
+                return {"synced": True}
+            except Exception as e:
+                print(f" >>> HQ SYNC FAILED: {e} <<<")
+                return {"synced": False, "error": str(e)}
 
     
     async def run(self):
@@ -205,8 +241,9 @@ class HotelServiceWorker:
         print("  - check-room-availability")
         print("  - block-room")
         print("  - create-booking")
-        print("  - process-payment (NEW)")
-        print("  - generate-accounting (NEW)")
+        print("  - process-payment")
+        print("  - generate-accounting")
+        print("  - sync-to-hq (ESB integration)")
         await self.worker.work()
 
 
