@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_ComplaintProcess" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.0.0">
+  <bpmn:process id="ComplaintHandlingProcess" name="Complaint Handling Process" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Complaint" name="Complaint Received">
+      <bpmn:outgoing>Flow_Start_Receive</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_ReceiveLogComplaint" name="Receive &amp; Log Complaint">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="receive-log-complaint" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_Receive</bpmn:incoming>
+      <bpmn:outgoing>Flow_Receive_Classify</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_ClassifyRedirect" name="Classify &amp; Redirect">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="classify-redirect" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Receive_Classify</bpmn:incoming>
+      <bpmn:outgoing>Flow_Classify_Assess</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_AssessSeverity" name="Assess Severity">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="assess-severity" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Classify_Assess</bpmn:incoming>
+      <bpmn:outgoing>Flow_Assess_SeverityGateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_Severity" name="High Technical Issue?">
+      <bpmn:incoming>Flow_Assess_SeverityGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_Severity_Technical</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Severity_Normal</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_UpdateDefectiveStatus" name="Mark Room as Defective">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="update-defective-status" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Severity_Technical</bpmn:incoming>
+      <bpmn:outgoing>Flow_Update_Repair</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_ExecuteRepair" name="Execute Immediate Repair">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="execute-repair" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Update_Repair</bpmn:incoming>
+      <bpmn:outgoing>Flow_Repair_CheckRelocation</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_CheckRelocation" name="Check Relocation Availability">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="check-relocation-availability" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Repair_CheckRelocation</bpmn:incoming>
+      <bpmn:outgoing>Flow_CheckRelocation_Gateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_Relocation" name="New Room Available?">
+      <bpmn:incoming>Flow_CheckRelocation_Gateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_Relocation_Yes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Relocation_No</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_InitiateRelocation" name="Initiate Guest Relocation">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="initiate-relocation" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Relocation_Yes</bpmn:incoming>
+      <bpmn:outgoing>Flow_Initiate_AssignNewRoom</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_AssignNewRoom" name="Assign New Room">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="assign-new-room" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Initiate_AssignNewRoom</bpmn:incoming>
+      <bpmn:outgoing>Flow_Assign_Compensation</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_RedirectService" name="Redirect to Other Service">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="redirect-service" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Severity_Normal</bpmn:incoming>
+      <bpmn:incoming>Flow_Relocation_No</bpmn:incoming>
+      <bpmn:outgoing>Flow_Redirect_Compensation</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_ProposeCompensation" name="Propose Compensation">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="propose-compensation" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Assign_Compensation</bpmn:incoming>
+      <bpmn:incoming>Flow_Redirect_Compensation</bpmn:incoming>
+      <bpmn:outgoing>Flow_Compensation_Close</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_CloseComplaint" name="Close Complaint">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="issue-closed" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Compensation_Close</bpmn:incoming>
+      <bpmn:outgoing>Flow_Close_End</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_ComplaintClosed" name="Complaint Resolved">
+      <bpmn:incoming>Flow_Close_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_Receive" sourceRef="StartEvent_Complaint" targetRef="Task_ReceiveLogComplaint" />
+    <bpmn:sequenceFlow id="Flow_Receive_Classify" sourceRef="Task_ReceiveLogComplaint" targetRef="Task_ClassifyRedirect" />
+    <bpmn:sequenceFlow id="Flow_Classify_Assess" sourceRef="Task_ClassifyRedirect" targetRef="Task_AssessSeverity" />
+    <bpmn:sequenceFlow id="Flow_Assess_SeverityGateway" sourceRef="Task_AssessSeverity" targetRef="Gateway_Severity" />
+    <bpmn:sequenceFlow id="Flow_Severity_Technical" name="High / Technical" sourceRef="Gateway_Severity" targetRef="Task_UpdateDefectiveStatus">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=severity = "high"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Severity_Normal" name="Other" sourceRef="Gateway_Severity" targetRef="Task_RedirectService">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=severity != "high"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Update_Repair" sourceRef="Task_UpdateDefectiveStatus" targetRef="Task_ExecuteRepair" />
+    <bpmn:sequenceFlow id="Flow_Repair_CheckRelocation" sourceRef="Task_ExecuteRepair" targetRef="Task_CheckRelocation" />
+    <bpmn:sequenceFlow id="Flow_CheckRelocation_Gateway" sourceRef="Task_CheckRelocation" targetRef="Gateway_Relocation" />
+    <bpmn:sequenceFlow id="Flow_Relocation_Yes" name="Yes" sourceRef="Gateway_Relocation" targetRef="Task_InitiateRelocation">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=new_room_available = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Relocation_No" name="No" sourceRef="Gateway_Relocation" targetRef="Task_RedirectService">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=new_room_available = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Initiate_AssignNewRoom" sourceRef="Task_InitiateRelocation" targetRef="Task_AssignNewRoom" />
+    <bpmn:sequenceFlow id="Flow_Assign_Compensation" sourceRef="Task_AssignNewRoom" targetRef="Task_ProposeCompensation" />
+    <bpmn:sequenceFlow id="Flow_Redirect_Compensation" sourceRef="Task_RedirectService" targetRef="Task_ProposeCompensation" />
+    <bpmn:sequenceFlow id="Flow_Compensation_Close" sourceRef="Task_ProposeCompensation" targetRef="Task_CloseComplaint" />
+    <bpmn:sequenceFlow id="Flow_Close_End" sourceRef="Task_CloseComplaint" targetRef="EndEvent_ComplaintClosed" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Complaint">
+    <bpmndi:BPMNPlane id="BPMNPlane_Complaint" bpmnElement="ComplaintHandlingProcess">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_Complaint">
+        <dc:Bounds x="179" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="156" y="202" width="82" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReceiveLogComplaint_di" bpmnElement="Task_ReceiveLogComplaint">
+        <dc:Bounds x="270" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ClassifyRedirect_di" bpmnElement="Task_ClassifyRedirect">
+        <dc:Bounds x="430" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AssessSeverity_di" bpmnElement="Task_AssessSeverity">
+        <dc:Bounds x="590" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Severity_di" bpmnElement="Gateway_Severity" isMarkerVisible="true">
+        <dc:Bounds x="755" y="152" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="744" y="116" width="72" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_UpdateDefectiveStatus_di" bpmnElement="Task_UpdateDefectiveStatus">
+        <dc:Bounds x="870" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ExecuteRepair_di" bpmnElement="Task_ExecuteRepair">
+        <dc:Bounds x="1030" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CheckRelocation_di" bpmnElement="Task_CheckRelocation">
+        <dc:Bounds x="1190" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Relocation_di" bpmnElement="Gateway_Relocation" isMarkerVisible="true">
+        <dc:Bounds x="1355" y="152" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1353" y="116" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_InitiateRelocation_di" bpmnElement="Task_InitiateRelocation">
+        <dc:Bounds x="1470" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AssignNewRoom_di" bpmnElement="Task_AssignNewRoom">
+        <dc:Bounds x="1630" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RedirectService_di" bpmnElement="Task_RedirectService">
+        <dc:Bounds x="870" y="300" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ProposeCompensation_di" bpmnElement="Task_ProposeCompensation">
+        <dc:Bounds x="1790" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CloseComplaint_di" bpmnElement="Task_CloseComplaint">
+        <dc:Bounds x="1950" y="137" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_ComplaintClosed_di" bpmnElement="EndEvent_ComplaintClosed">
+        <dc:Bounds x="2112" y="159" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2105" y="202" width="51" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Start_Receive_di" bpmnElement="Flow_Start_Receive">
+        <di:waypoint x="215" y="177" />
+        <di:waypoint x="270" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Receive_Classify_di" bpmnElement="Flow_Receive_Classify">
+        <di:waypoint x="370" y="177" />
+        <di:waypoint x="430" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Classify_Assess_di" bpmnElement="Flow_Classify_Assess">
+        <di:waypoint x="530" y="177" />
+        <di:waypoint x="590" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Assess_SeverityGateway_di" bpmnElement="Flow_Assess_SeverityGateway">
+        <di:waypoint x="690" y="177" />
+        <di:waypoint x="755" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Severity_Technical_di" bpmnElement="Flow_Severity_Technical">
+        <di:waypoint x="805" y="177" />
+        <di:waypoint x="870" y="177" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="798" y="159" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Severity_Normal_di" bpmnElement="Flow_Severity_Normal">
+        <di:waypoint x="780" y="202" />
+        <di:waypoint x="780" y="340" />
+        <di:waypoint x="870" y="340" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="781" y="268" width="29" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Update_Repair_di" bpmnElement="Flow_Update_Repair">
+        <di:waypoint x="970" y="177" />
+        <di:waypoint x="1030" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Repair_CheckRelocation_di" bpmnElement="Flow_Repair_CheckRelocation">
+        <di:waypoint x="1130" y="177" />
+        <di:waypoint x="1190" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CheckRelocation_Gateway_di" bpmnElement="Flow_CheckRelocation_Gateway">
+        <di:waypoint x="1290" y="177" />
+        <di:waypoint x="1355" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Relocation_Yes_di" bpmnElement="Flow_Relocation_Yes">
+        <di:waypoint x="1405" y="177" />
+        <di:waypoint x="1470" y="177" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1429" y="159" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Relocation_No_di" bpmnElement="Flow_Relocation_No">
+        <di:waypoint x="1380" y="202" />
+        <di:waypoint x="1380" y="340" />
+        <di:waypoint x="970" y="340" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1388" y="268" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Initiate_AssignNewRoom_di" bpmnElement="Flow_Initiate_AssignNewRoom">
+        <di:waypoint x="1570" y="177" />
+        <di:waypoint x="1630" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Assign_Compensation_di" bpmnElement="Flow_Assign_Compensation">
+        <di:waypoint x="1730" y="177" />
+        <di:waypoint x="1790" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Redirect_Compensation_di" bpmnElement="Flow_Redirect_Compensation">
+        <di:waypoint x="920" y="380" />
+        <di:waypoint x="920" y="420" />
+        <di:waypoint x="1840" y="420" />
+        <di:waypoint x="1840" y="217" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Compensation_Close_di" bpmnElement="Flow_Compensation_Close">
+        <di:waypoint x="1890" y="177" />
+        <di:waypoint x="1950" y="177" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Close_End_di" bpmnElement="Flow_Close_End">
+        <di:waypoint x="2050" y="177" />
+        <di:waypoint x="2112" y="177" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -30,10 +30,10 @@
     <bpmn:sequenceFlow id="Flow_SearchClient" sourceRef="StartEvent_ClientCreation" targetRef="Task_SearchClient" />
     <bpmn:sequenceFlow id="Flow_ClientDecision" sourceRef="Task_SearchClient" targetRef="Gateway_ClientExists" />
     <bpmn:sequenceFlow id="Flow_CreateNew" name="Not Found" sourceRef="Gateway_ClientExists" targetRef="Task_CreateClient">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=${clientFound == false}</bpmn:conditionExpression>
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=clientFound = false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_UseExisting" name="Found" sourceRef="Gateway_ClientExists" targetRef="EndEvent_ClientReady">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=${clientFound == true}</bpmn:conditionExpression>
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=clientFound = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_Merge" sourceRef="Task_CreateClient" targetRef="EndEvent_ClientReady" />
   </bpmn:process>
